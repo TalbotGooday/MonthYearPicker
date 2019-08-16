@@ -2,11 +2,12 @@ package com.whiteelephant.monthpicker
 
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.util.AttributeSet
+import android.util.DisplayMetrics
 import android.util.Log
 import android.util.TypedValue
-import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.core.content.ContextCompat
@@ -15,7 +16,7 @@ import java.text.DateFormatSymbols
 import java.util.*
 
 class MonthPickerView @JvmOverloads constructor(
-		context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+		context: Context, private val attrs: AttributeSet? = null, private val defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 	companion object {
 		var minYear = 1900
@@ -23,7 +24,7 @@ class MonthPickerView @JvmOverloads constructor(
 	}
 
 	var yearView: YearPickerView
-	private var monthViewAdapter: MonthViewAdapter
+	private lateinit var monthViewAdapter: MonthViewAdapter
 	var monthList: ListView
 	var monthTV: TextView
 	var yearTV: TextView
@@ -37,76 +38,56 @@ class MonthPickerView @JvmOverloads constructor(
 	var onMonthChanged: MonthPickerDialog.OnMonthChangedListener? = null
 	var onDateSet: OnDateSet? = null
 	var onCancel: OnCancel? = null
-	private val monthNames: Array<String>
+	private var monthNames: Array<String> = arrayOf()
+	private var headerBgColor: Int = ContextCompat.getColor(context, R.color.fontWhiteEnable)
+	private var monthBgColor: Int = ContextCompat.getColor(context, R.color.fontWhiteEnable)
+	private var monthBgSelectedColor: Int = 0
+	private var monthFontColorNormal: Int = 0
+	private var monthFontColorSelected: Int = 0
+	private var monthFontColorDisabled: Int = 0
+	private var actionButtonColor: Int = 0
+	private var headerTitleColor: Int = 0
+
+	var defaultLocale: Locale? = Locale.getDefault()
+		get() = field ?: Locale.getDefault()
+		set(value) {
+			field = value ?: Locale.getDefault()
+			monthNames = DateFormatSymbols(field).shortMonths
+			monthViewAdapter.monthNames = monthNames
+		}
 
 	var configChangeListener: MonthPickerDialog.OnConfigChangeListener? = null
 
 	init {
+
 		inflate(context, R.layout.month_picker_view, this)
 
-		monthNames = DateFormatSymbols(Locale.getDefault()).shortMonths
+		monthList = findViewById<View>(R.id.listview) as ListView
+		yearView = findViewById<View>(R.id.yearView) as YearPickerView
+		monthTV = findViewById<View>(R.id.month) as TextView
+		yearTV = findViewById<View>(R.id.year) as TextView
+		titleTV = findViewById<View>(R.id.title) as TextView
+
+		monthViewAdapter = MonthViewAdapter(context)
 
 		val a = context.obtainStyledAttributes(attrs, R.styleable.MonthPickerView,
 				defStyleAttr, 0)
 
-		// getting default values based on the user's theme.
-
-		/*
-
-       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                headerBgColor = android.R.attr.colorAccent;
-            } else {
-                //Get colorAccent defined for AppCompat
-                headerBgColor = context.getResources().getIdentifier("colorAccent", "attr", context.getPackageName());
-            }
-            TypedValue outValue = new TypedValue();
-            context.getTheme().resolveAttribute(headerBgColor, outValue, true);
-            int color = outValue.data;
-
-        // OR
-        TypedValue typedValue = new TypedValue();
-
-        TypedArray a = mContext.obtainStyledAttributes(typedValue.data, new int[] { R.attr.colorAccent, R.attr.colorPrimary });
-        int color = a.getColor(0, 0);
-
-        a.recycle();
-
-        // OR
-
-        final TypedValue value = new TypedValue ();
-        context.getTheme ().resolveAttribute (R.attr.colorAccent, value, true);
-        int color = value.data
-    */
-
-		var headerBgColor = a.getColor(R.styleable.MonthPickerView_headerBgColor, 0)
+		headerBgColor = a.getColor(R.styleable.MonthPickerView_headerBgColor, 0)
 		headerFontColorNormal = a.getColor(R.styleable.MonthPickerView_headerFontColorNormal, 0)
 		headerFontColorSelected = a.getColor(R.styleable.MonthPickerView_headerFontColorSelected, 0)
-		var monthBgColor = a.getColor(R.styleable.MonthPickerView_monthBgColor, 0)
-		var monthBgSelectedColor = a.getColor(R.styleable.MonthPickerView_monthBgSelectedColor, 0)
-		var monthFontColorNormal = a.getColor(R.styleable.MonthPickerView_monthFontColorNormal, 0)
-		var monthFontColorSelected = a.getColor(R.styleable.MonthPickerView_monthFontColorSelected, 0)
-		var monthFontColorDisabled = a.getColor(R.styleable.MonthPickerView_monthFontColorDisabled, 0)
-		var headerTitleColor = a.getColor(R.styleable.MonthPickerView_headerTitleColor, 0)
-		val actionButtonColor = a.getColor(R.styleable.MonthPickerView_dialogActionButtonColor, 0)
+		monthBgColor = a.getColor(R.styleable.MonthPickerView_monthBgColor, 0)
+		monthBgSelectedColor = a.getColor(R.styleable.MonthPickerView_monthBgSelectedColor, 0)
+		monthFontColorNormal = a.getColor(R.styleable.MonthPickerView_monthFontColorNormal, 0)
+		monthFontColorSelected = a.getColor(R.styleable.MonthPickerView_monthFontColorSelected, 0)
+		monthFontColorDisabled = a.getColor(R.styleable.MonthPickerView_monthFontColorDisabled, 0)
+		headerTitleColor = a.getColor(R.styleable.MonthPickerView_headerTitleColor, 0)
+		actionButtonColor = a.getColor(R.styleable.MonthPickerView_dialogActionButtonColor, 0)
+
+		a.recycle()
 
 		if (monthFontColorNormal == 0) {
-
 			monthFontColorNormal = ContextCompat.getColor(context, R.color.fontBlackEnable)
-
-			/* if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                monthFontColorNormal = android.R.attr.textColor;
-            } else {
-                monthFontColorNormal = getResources().getIdentifier("textColor", "attr", null);
-            }
-            TypedValue outValue = new TypedValue();
-            context.getTheme().resolveAttribute(monthFontColorNormal, outValue, true);
-            int color = outValue.data;
-            monthFontColorNormal = color;*/
-
-
-			/*monthFontColorNormal = context.getTheme().resolveAttribute(
-                    android.R.attr.textColorPrimary, outValue, true) ? outValue.data : getResources().getColor(R.color.fontBlackEnable);*/
-
 		}
 
 		if (monthFontColorSelected == 0) {
@@ -145,17 +126,51 @@ class MonthPickerView @JvmOverloads constructor(
 
 		if (monthBgSelectedColor == 0) {
 
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-				monthBgSelectedColor = android.R.attr.colorAccent
+			monthBgSelectedColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+				android.R.attr.colorAccent
 			} else {
 				//Get colorAccent defined for AppCompat
-				monthBgSelectedColor = context.resources.getIdentifier("colorAccent",
+				context.resources.getIdentifier("colorAccent",
 						"attr", context.packageName)
 			}
+
 			val outValue = TypedValue()
 			context.theme.resolveAttribute(monthBgSelectedColor, outValue, true)
 			monthBgSelectedColor = outValue.data
 		}
+
+	}
+
+	fun init() {
+
+		// getting default values based on the user's theme.
+
+		/*
+
+	   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+				headerBgColor = android.R.attr.colorAccent;
+			} else {
+				//Get colorAccent defined for AppCompat
+				headerBgColor = context.getResources().getIdentifier("colorAccent", "attr", context.getPackageName());
+			}
+			TypedValue outValue = new TypedValue();
+			context.getTheme().resolveAttribute(headerBgColor, outValue, true);
+			int color = outValue.data;
+
+		// OR
+		TypedValue typedValue = new TypedValue();
+
+		TypedArray a = mContext.obtainStyledAttributes(typedValue.data, new int[] { R.attr.colorAccent, R.attr.colorPrimary });
+		int color = a.getColor(0, 0);
+
+		a.recycle();
+
+		// OR
+
+		final TypedValue value = new TypedValue ();
+		context.getTheme ().resolveAttribute (R.attr.colorAccent, value, true);
+		int color = value.data
+	*/
 
 		val map = HashMap<String, Int>()
 		if (monthBgColor != 0)
@@ -169,18 +184,18 @@ class MonthPickerView @JvmOverloads constructor(
 		if (monthFontColorDisabled != 0)
 			map["monthFontColorDisabled"] = monthFontColorDisabled
 
-		a.recycle()
+		val config = Configuration(context.resources.configuration)
+		config.setLocale(defaultLocale)
+		val okText = context.createConfigurationContext(config).getText(android.R.string.ok).toString()
+		val cancelText = context.createConfigurationContext(config).getText(android.R.string.cancel).toString()
 
-		monthList = findViewById<View>(R.id.listview) as ListView
-		yearView = findViewById<View>(R.id.yearView) as YearPickerView
-		monthTV = findViewById<View>(R.id.month) as TextView
-		yearTV = findViewById<View>(R.id.year) as TextView
-		titleTV = findViewById<View>(R.id.title) as TextView
 		val pickerBg = findViewById<View>(R.id.picker_view) as RelativeLayout
 		val header = findViewById<View>(R.id.header) as LinearLayout
 		val actionBtnLay = findViewById<View>(R.id.action_btn_lay) as RelativeLayout
 		val ok = findViewById<View>(R.id.ok_action) as TextView
+		ok.text = okText
 		val cancel = findViewById<View>(R.id.cancel_action) as TextView
+		cancel.text = cancelText
 
 		if (actionButtonColor != 0) {
 			ok.setTextColor(actionButtonColor)
@@ -205,7 +220,6 @@ class MonthPickerView @JvmOverloads constructor(
 
 		ok.setOnClickListener { onDateSet?.onDateSet() }
 		cancel.setOnClickListener { onCancel?.onCancel() }
-		monthViewAdapter = MonthViewAdapter(context)
 		monthViewAdapter.setColors(map)
 		monthViewAdapter.setOnDaySelectedListener(object : MonthViewAdapter.OnDaySelectedListener {
 			override fun onDaySelected(view: MonthViewAdapter, selectedMonth: Int) {
@@ -380,5 +394,9 @@ class MonthPickerView @JvmOverloads constructor(
 	override fun onConfigurationChanged(newConfig: Configuration) {
 		configChangeListener?.onConfigChange()
 		super.onConfigurationChanged(newConfig)
+	}
+
+	fun setLocale(locale: Locale?) {
+		defaultLocale = locale
 	}
 }

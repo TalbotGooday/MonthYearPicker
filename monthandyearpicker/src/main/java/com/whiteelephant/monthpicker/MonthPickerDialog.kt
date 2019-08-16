@@ -105,7 +105,6 @@ private constructor(context: Context,
 		super.show()
 	}
 
-
 	override fun onClick(dialog: DialogInterface, which: Int) {
 		tryNotifyDateSet()
 	}
@@ -147,6 +146,10 @@ private constructor(context: Context,
 		datePicker?.setActivatedYear(activatedMonth)
 	}
 
+	private fun setLocale(locale: Locale?) {
+		datePicker?.setLocale(locale)
+	}
+
 	private fun setMonthPickerTitle(title: String) {
 		datePicker?.setTitle(title)
 	}
@@ -169,6 +172,10 @@ private constructor(context: Context,
 		if (onYearChangedListener != null) {
 			datePicker?.setOnYearChangedListener(onYearChangedListener)
 		}
+	}
+
+	private fun init() {
+		datePicker?.init()
 	}
 
 	class Builder
@@ -202,6 +209,7 @@ private constructor(context: Context,
 		private var monthPickerDialog: MonthPickerDialog? = null
 		private var _onYearChanged: OnYearChangedListener? = null
 		private var _onMonthChanged: OnMonthChangedListener? = null
+		private var defaultLocale: Locale? = null
 
 		init {
 			if (month >= Calendar.JANUARY && month <= Calendar.DECEMBER) {
@@ -482,22 +490,30 @@ private constructor(context: Context,
 			}
 
 			monthPickerDialog?.apply {
+				setLocale(defaultLocale)
 				setMinMonth(_minMonth)
 				setMaxMonth(_maxMonth)
 				setMinYear(_minYear)
 				setMaxYear(_maxYear)
 				setActivatedMonth(_activatedMonth)
 				setActivatedYear(_activatedYear)
+				init()
 			}
 
 			_onMonthChanged?.run { monthPickerDialog?.setOnMonthChangedListener(this) }
 
-			_onYearChanged?.run { monthPickerDialog!!.setOnYearChangedListener(this) }
+			_onYearChanged?.run { monthPickerDialog?.setOnYearChangedListener(this) }
 
 			if (title != null) {
 				monthPickerDialog?.setMonthPickerTitle(title!!.trim { it <= ' ' })
 			}
 			return monthPickerDialog!!
+		}
+
+		fun setLocale(locale: Locale?): Builder {
+			defaultLocale = locale
+
+			return this
 		}
 	}
 

@@ -40,7 +40,7 @@ internal class MonthView @JvmOverloads constructor(context: Context, attrs: Attr
 	private lateinit var monthNumberDisabledPaint: Paint
 	private lateinit var _monthNumberSelectedPaint: Paint
 	// month
-	private val _monthNames: Array<String> = DateFormatSymbols(Locale.getDefault()).shortMonths
+	var monthNames: Array<String> = DateFormatSymbols(Locale.getDefault()).shortMonths
 	private val monthTextSize: Int
 	private val monthHeaderSize: Int
 	private var monthSelectedCircleSize: Int = 0
@@ -125,7 +125,7 @@ internal class MonthView @JvmOverloads constructor(context: Context, attrs: Attr
 		var y = (rowHeight + monthTextSize) / 2 - DAY_SEPARATOR_WIDTH + monthHeaderSize
 		val dayWidthHalf = (_width - _padding * 2) / (numDays * 2)
 		var j = 0
-		for (month in _monthNames.indices) {
+		for (month in monthNames.indices) {
 			val x = (2 * j + 1) * dayWidthHalf + _padding
 
 			if (selectedMonth == month) {
@@ -148,7 +148,7 @@ internal class MonthView @JvmOverloads constructor(context: Context, attrs: Attr
 				monthNumberPaint
 			}
 
-			canvas.drawText(_monthNames[month], x.toFloat(), y.toFloat(), paint)
+			canvas.drawText(monthNames[month], x.toFloat(), y.toFloat(), paint)
 			j++
 			if (j == numDays) {
 				j = 0

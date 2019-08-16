@@ -17,6 +17,7 @@ class MonthViewAdapter(private val _context: Context) : BaseAdapter() {
 	private var activatedMonth: Int = 0
 	private var colors: HashMap<String, Int>? = null
 	private var mOnDaySelectedListener: OnDaySelectedListener? = null
+	var monthNames: Array<String> = arrayOf()
 
 	private val mOnDayClickListener = object : MonthView.OnMonthClickListener {
 		override fun onMonthClick(view: MonthView, day: Int) {
@@ -53,6 +54,7 @@ class MonthViewAdapter(private val _context: Context) : BaseAdapter() {
 			v = convertView as? MonthView?
 		} else {
 			v = MonthView(_context)
+			v.monthNames = monthNames
 			v.setColors(colors!!)
 
 			// Set up the new view
